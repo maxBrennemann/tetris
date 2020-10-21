@@ -123,26 +123,7 @@ var Game = function(canvas) {
 
 Game.prototype.startGame = function() {
     this.tileGroup.drop();
-    //var gameloop = setInterval(function() {
-    /*while (this.isContinuing) {
-        if (this.setDropNew) {
-            this.tileGroup = new TileGroup(this);
-            this.tileGroup.drop();
-            this.setDropNew = false;
-        }
-        switch(keys) {
-            case "ArrowLeft":
-                this.tileGroup.changeXPos(-1);
-            break;
-            case "ArrowRight":
-                this.tileGroup.changeXPos(+1);
-            break; 
-        }
-        keys = "";
-    }//, 50);*/
-    
     window.requestAnimationFrame(g.loop);
-
 }
 
 Game.prototype.loop = function() {
@@ -206,12 +187,13 @@ TileGroup.prototype.changeXPos = function(num) {
 TileGroup.prototype.changeYPos = function(num) {
     if (isNaN(num))
         return false;
-    let tempPos = this.yPos + num;
+    /*let tempPos = this.yPos + num;
     if (this.validatePosition(this.xPos, tempPos)) {
         this.yPos = tempPos;
         this.draw();
     } else
-        return false;
+        return false;*/
+    this.yPos += num;
 }
 
 /* https://stackoverflow.com/questions/3583724/how-do-i-add-a-delay-in-a-javascript-loop */
@@ -223,6 +205,7 @@ TileGroup.prototype.drop = async function() {
     
     // We need to wrap the loop into an async function for this to work
     while(this.validatePosition()) {
+        this.draw();
         this.changeYPos(1);
         await timer(500);
     }
