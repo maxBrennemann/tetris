@@ -106,6 +106,8 @@ var Game = function(canvas) {
     this.isContinuing = true;
     this.tiles =  [];
     this.canvas = canvas;
+    this.tileGroup = new TileGroup(this);
+    this.setDropNew = false;
     this.init = function() {
         let width = 10;
         let height = 20;
@@ -120,9 +122,46 @@ var Game = function(canvas) {
 }
 
 Game.prototype.startGame = function() {
-    while (this.isContinuing) {
+    this.tileGroup.drop();
+    //var gameloop = setInterval(function() {
+    /*while (this.isContinuing) {
+        if (this.setDropNew) {
+            this.tileGroup = new TileGroup(this);
+            this.tileGroup.drop();
+            this.setDropNew = false;
+        }
+        switch(keys) {
+            case "ArrowLeft":
+                this.tileGroup.changeXPos(-1);
+            break;
+            case "ArrowRight":
+                this.tileGroup.changeXPos(+1);
+            break; 
+        }
+        keys = "";
+    }//, 50);*/
+    
+    window.requestAnimationFrame(g.loop);
 
+}
+
+Game.prototype.loop = function() {
+    if (g.setDropNew) {
+        g.tileGroup = new TileGroup(g);
+        g.tileGroup.drop();
+        g.setDropNew = false;
     }
+    switch(keys) {
+        case "ArrowLeft":
+            g.tileGroup.changeXPos(-1);
+        break;
+        case "ArrowRight":
+            g.tileGroup.changeXPos(+1);
+        break; 
+    }
+    keys = "";
+
+    window.requestAnimationFrame(g.loop);
 }
 
 Game.prototype.getRandomTile = function() {
@@ -153,6 +192,28 @@ var TileGroup = function(parent) {
     this.parent = parent == undefined ? g : parent;
 }
 
+TileGroup.prototype.changeXPos = function(num) {
+    if (isNaN(num))
+        return false;
+    let tempPos = this.xPos + num;
+    if (this.validatePosition(tempPos)) {
+        this.xPos = tempPos;
+        this.draw();
+    } else
+        return false;
+}
+
+TileGroup.prototype.changeYPos = function(num) {
+    if (isNaN(num))
+        return false;
+    let tempPos = this.yPos + num;
+    if (this.validatePosition(this.xPos, tempPos)) {
+        this.yPos = tempPos;
+        this.draw();
+    } else
+        return false;
+}
+
 /* https://stackoverflow.com/questions/3583724/how-do-i-add-a-delay-in-a-javascript-loop */
 TileGroup.prototype.drop = async function() {
     // Returns a Promise that resolves after "ms" Milliseconds
@@ -161,15 +222,44 @@ TileGroup.prototype.drop = async function() {
     }
     
     // We need to wrap the loop into an async function for this to work
-    while(this.isDroppable()) {
-        this.draw();
-        this.yPos++;
+    while(this.validatePosition()) {
+        this.changeYPos(1);
         await timer(500);
     }
 
     /* wird um eins verringert, weil es zum Zeitpunkt der Schleifenvollendung zu groß ist */
     this.yPos--;
     this.set();
+}
+
+TileGroup.prototype.validatePosition = function(x, y) {
+    if (x == undefined)
+        x = this.xPos;
+    if (y == undefined)
+        y = this.yPos;
+    
+    let tempX, tempY
+    for (let i = 0; i < this.formCode.length; i++) {
+        tempX = this.formCode[i][0] + x;
+        tempY = this.formCode[i][1] + y;
+        console.log(tempX);
+        if (tempX < 0 || tempX >= 10) {
+            return false;
+        }
+        if (tempY < 0 || tempY >= 20) {
+            return false;
+        }
+    }
+
+    /* no need to check for out of bounds, this is done in the upper loop */
+    for (let i = 0; i < this.formCode.length; i++) {
+        tempX = this.formCode[i][0] + x;
+        tempY = this.formCode[i][1] + y;
+        if (this.parent.tiles[tempX][tempY].isSet == true)
+            return false;
+    }
+
+    return true;
 }
 
 TileGroup.prototype.isDroppable = function() {
@@ -207,6 +297,7 @@ TileGroup.prototype.set = function() {
         let yTile = this.formCode[i][1] + this.yPos;
         this.parent.tiles[xTile][yTile].isSet = true;
     }
+    this.parent.setDropNew = true;
 }
 
 TileGroup.prototype.spawn = function() {
@@ -281,6 +372,7 @@ Tile.prototype.draw = function(color) {
 /* global varaibles and functions in global scope */
 var canv = new Canvas(250, 500);
 var g;
+var keys;
 
 var onPageLoad = function() {
     canv.attachToPage();
@@ -306,3 +398,11 @@ var test = function(formCode) {
     tileG.formCode = code;
     tileG.draw();
 }
+
+document.addEventListener("keydown", function(event) {
+    event = event || window.event;
+    if (event.key) {
+        keys = event.key;
+        console.log(event.key);
+    }
+}, false);
